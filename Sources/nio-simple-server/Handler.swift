@@ -12,13 +12,12 @@ final class Handler: ChannelInboundHandler {
         
         switch reqPart {
         case let .head(header):
-            request = URL(string: header.uri).map { URLRequest(url: $0) }
-            request?.httpMethod = method(from: header.method)
-            print(request ?? "Unable to construct a request")
+            request = makeRequest(with: header)
             
-        case let .body(bodyPart):
-            print("Body:\n")
-            print(bodyPart)
+        case var .body(bodyPart):
+            var body = request?.httpBody ?? Data()
+            bodyPart.readBytes(length: bodyPart.readableBytes).map { body.append(Data($0)) }
+            request?.httpBody = body
             
         case .end:
             // TODO: dispatch different requests
@@ -87,4 +86,18 @@ private func method(from method: HTTPMethod) -> String {
   case .SOURCE: return "SOURCE"
   case let .RAW(value): return value
   }
+}
+
+private func makeRequest(with header: HTTPRequestHead) -> URLRequest? {
+    URL(string: header.uri).map { url in
+        var req = URLRequest(url: url)
+        req.httpMethod = method(from: header.method)
+        req.allHTTPHeaderFields = header.headers.reduce(into: [:]) { $0[$1.name] = $1.value }
+        let proto = req.value(forHTTPHeaderField: "X-Forwarded-Proto") ?? "http"
+        req.url = req.value(forHTTPHeaderField: "Host").flatMap {
+          URL(string: proto + "://" + $0 + header.uri)
+        }
+        
+        return req
+    }
 }

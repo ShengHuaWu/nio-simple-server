@@ -9,6 +9,9 @@ import NIOHTTP1
 #endif
 
 func run() {
+    let baseURL = URL(string: "http://127.0.0.1")!
+    let port = 5567
+    
     do {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: numberOfThreads)
         let reuseAddrOpt = ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR)
@@ -17,17 +20,15 @@ func run() {
             .serverChannelOption(reuseAddrOpt, value: 1)
             .childChannelInitializer { channel in
                 channel.pipeline.configureHTTPServerPipeline().flatMap {
-                    return channel.pipeline.addHandler(Handler())
+                    return channel.pipeline.addHandler(Handler(baseURL: baseURL, port: port))
                 }
             }
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
             .childChannelOption(reuseAddrOpt, value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
         
-        let host = "127.0.0.1"
-        let port = 5567
-        let serverChannel = try bootstrap.bind(host: host, port: port).wait()
-        print("Listening on \(host):\(port)...")
+        let serverChannel = try bootstrap.bind(host: baseURL.host!, port: port).wait()
+        print("Listening on \(baseURL):\(port)...")
         try serverChannel.closeFuture.wait()
         try eventLoopGroup.syncShutdownGracefully()
     } catch {

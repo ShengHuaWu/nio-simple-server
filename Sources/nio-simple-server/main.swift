@@ -25,7 +25,7 @@ func run() {
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
         
         let host = "127.0.0.1"
-        let port = 5566
+        let port = 5567
         let serverChannel = try bootstrap.bind(host: host, port: port).wait()
         print("Listening on \(host):\(port)...")
         try serverChannel.closeFuture.wait()

@@ -28,11 +28,11 @@ final class Handler: ChannelInboundHandler {
             
         case .end:
             guard let request = self.request,
+                  // TODO: `Router.todos` should be passed from outside
                   let action = Router.todos.route(request) else {
-                // TODO: Should return proper status code or even an error
                 let head = HTTPResponseHead(
                     version: .init(major: 1, minor: 1),
-                    status: .init(statusCode: 200),
+                    status: .init(statusCode: 200), // TODO: Should return proper status code or even an error
                     headers: .init([("location", "\(baseURL.absoluteString):\(port)")])
                 )
                 context.channel.write(HTTPServerResponsePart.head(head), promise: nil)
@@ -42,14 +42,16 @@ final class Handler: ChannelInboundHandler {
                 return
             }
             
+            let response = Middleware.todos.run(action) // TODO: `Middleware.todos` should be passed from outside
             let head = HTTPResponseHead(
                 version: .init(major: 1, minor: 1),
-                status: .init(statusCode: 200), // TODO: Status code should be based on actions
-                headers: .init([("location", "\(baseURL.absoluteString):\(port)")])
+                status: .init(statusCode: response.statusCode),
+                headers: .init(response.headers.map { ($0.key, $0.value) })
             )
             context.channel.write(HTTPServerResponsePart.head(head), promise: nil)
             
-            let buffer = ByteBuffer(string: "\(action)")
+            var buffer = context.channel.allocator.buffer(capacity: response.body.count)
+            buffer.writeBytes(response.body)
             context.channel.write(HTTPServerResponsePart.body(.byteBuffer(buffer)), promise: nil)
             
             _ = context.channel.writeAndFlush(HTTPServerResponsePart.end(nil)).flatMap {

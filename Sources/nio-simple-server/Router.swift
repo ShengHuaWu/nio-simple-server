@@ -1,15 +1,15 @@
 import Foundation
 import NIOHTTP1
 
-enum Action {
-    case getToDo(id: String)
-    case getAllToDos
-    case createToDo // TODO: Missing body
-    case updateToDo // TODO: Missing body
-    case deleteToDo(id: String)
+enum TodoAction {
+    case get(id: String)
+    case getAll
+    case create // TODO: Missing body
+    case update // TODO: Missing body
+    case delete(id: String)
 }
 
-struct Router {
+struct Router<Action> {
     let route: (URLRequest) -> Action?
 }
 
@@ -31,7 +31,7 @@ extension Router {
     }
 }
 
-extension Router {
+extension Router where Action == TodoAction {
     static let todos = Router { request in
         guard let url = request.url, let components = URLComponents(string: url.absoluteString) else {
             return nil
@@ -48,16 +48,16 @@ extension Router {
         case .GET:
             if let indexOfTodos = pathComponents.firstIndex(of: "todos"),
                let indexOfId = pathComponents.index(indexOfTodos, offsetBy: 1, limitedBy: pathComponents.endIndex - 1) {
-                return .getToDo(id: pathComponents[indexOfId])
+                return .get(id: pathComponents[indexOfId])
             } else {
-                return .getAllToDos
+                return .getAll
             }
             
         case .POST:
-            return .createToDo
+            return .create
             
         case .PUT:
-            return .updateToDo
+            return .update
             
         case .DELETE:
             guard let indexOfTodos = pathComponents.firstIndex(of: "todos"),
@@ -65,7 +65,7 @@ extension Router {
                 return nil
             }
             
-            return .deleteToDo(id: pathComponents[indexOfId])
+            return .delete(id: pathComponents[indexOfId])
             
         default:
             return nil

@@ -1,14 +1,6 @@
 import Foundation
 import NIOHTTP1
 
-enum TodoAction {
-    case get(id: String)
-    case getAll
-    case create // TODO: Missing body
-    case update // TODO: Missing body
-    case delete(id: String)
-}
-
 struct Router<Action> {
     let route: (URLRequest) -> Action?
 }
@@ -54,10 +46,32 @@ extension Router where Action == TodoAction {
             }
             
         case .POST:
-            return .create
+            guard let httpBody = request.httpBody else {
+                return nil
+            }
+            
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .millisecondsSince1970
+                        
+            do {
+                return .create(body: try decoder.decode(CreateTodoItemBody.self, from: httpBody))
+            } catch {
+                return nil
+            }
             
         case .PUT:
-            return .update
+            guard let httpBody = request.httpBody else {
+                return nil
+            }
+            
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .millisecondsSince1970
+            
+            do {
+                return .update(body: try decoder.decode(UpdateTodoItemBody.self, from: httpBody))
+            } catch {
+                return nil
+            }
             
         case .DELETE:
             guard let indexOfTodos = pathComponents.firstIndex(of: "todos"),

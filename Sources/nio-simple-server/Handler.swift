@@ -2,6 +2,8 @@ import Foundation
 import NIO
 import NIOHTTP1
 
+private var todoState = ToDoState() // TODO: This should be stored into DB
+
 final class Handler: ChannelInboundHandler {
     typealias InboundIn = HTTPServerRequestPart
     
@@ -42,7 +44,7 @@ final class Handler: ChannelInboundHandler {
                 return
             }
             
-            let response = Middleware.todos.run(action) // TODO: `Middleware.todos` should be passed from outside
+            let response = Middleware.todos.run(&todoState, action) // TODO: `Middleware.todos` should be passed from outside
             let head = HTTPResponseHead(
                 version: .init(major: 1, minor: 1),
                 status: .init(statusCode: response.statusCode),

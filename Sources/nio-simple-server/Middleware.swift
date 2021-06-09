@@ -1,37 +1,43 @@
 import Foundation
 
+enum TodoAction {
+    case get(id: String)
+    case getAll
+    case create(body: CreateTodoItemBody)
+    case update(body: UpdateTodoItemBody)
+    case delete(id: String)
+}
+
+struct ToDoState {
+    var todos: [ToDoItem] = []
+}
+
 struct Response {
     let statusCode: Int
     let headers: [String: String]
     let body: Data
 }
 
-struct Middleware<Action> {
-    let run: (Action) -> Response
+struct Middleware<State, Action> {
+    let run: (inout State, Action) -> Response
 }
 
 // TODO: Implement state
-extension Middleware where Action == TodoAction {
-    static let todos = Middleware { action in
+extension Middleware where State == ToDoState, Action == TodoAction {
+    static let todos = Middleware { state, action in
         switch action {
         case let .get(id):
-            let item = ToDoItem(
-                id: id,
-                description: "This is a fake one",
-                dueTo: Date(),
-                createdAt: Date(),
-                updatedAt: Date()
-            )
+            guard let item = state.todos.first(where: { $0.id == id }) else {
+                return .init(statusCode: 404, headers: [:], body: "Todo item not found".data(using: .utf8)!)
+            }
             
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .millisecondsSince1970
-            do {
-                let body = try encoder.encode(item)
-                
+            do {                
                 return .init(
                     statusCode: 200,
                     headers: [:],
-                    body: body
+                    body: try encoder.encode(item)
                 )
             } catch {
                 return .init(
@@ -41,23 +47,13 @@ extension Middleware where Action == TodoAction {
             }
             
         case .getAll:
-            let item = ToDoItem(
-                id: "XYZ",
-                description: "This is a fake one",
-                dueTo: Date(),
-                createdAt: Date(),
-                updatedAt: Date()
-            )
-            
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .millisecondsSince1970
             do {
-                let body = try encoder.encode([item])
-                
                 return .init(
                     statusCode: 200,
                     headers: [:],
-                    body: body
+                    body: try encoder.encode(state.todos)
                 )
             } catch {
                 return .init(
@@ -66,8 +62,31 @@ extension Middleware where Action == TodoAction {
                     body: "Encoding todo items failure".data(using: .utf8)!)
             }
             
-        case .create:
-            return .init(statusCode: 201, headers: [:], body: "Created".data(using: .utf8)!)
+        case let .create(body):
+            let now = Date()
+            let item = ToDoItem(
+                id: UUID().uuidString,
+                description: body.description,
+                dueTo: body.dueTo,
+                createdAt: now,
+                updatedAt: now
+            )
+            state.todos.append(item)
+            
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .millisecondsSince1970
+            do {
+                return .init(
+                    statusCode: 201,
+                    headers: [:],
+                    body: try encoder.encode(item)
+                )
+            } catch {
+                return .init(
+                    statusCode: 500,
+                    headers: [:],
+                    body: "Encoding todo item failure".data(using: .utf8)!)
+            }
             
         case .update:
             return .init(statusCode: 200, headers: [:], body: "Updated".data(using: .utf8)!)

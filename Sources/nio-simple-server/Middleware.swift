@@ -4,7 +4,7 @@ enum TodoAction {
     case get(id: String)
     case getAll
     case create(body: CreateTodoItemBody)
-    case update(body: UpdateTodoItemBody)
+    case update(id: String, body: UpdateTodoItemBody)
     case delete(id: String)
 }
 
@@ -31,7 +31,7 @@ extension Middleware where State == ToDoState, Action == TodoAction {
                 return .init(statusCode: 404, headers: [:], body: "Todo item not found".data(using: .utf8)!)
             }
             
-            let encoder = JSONEncoder()
+            let encoder = JSONEncoder() // TODO: Use environment
             encoder.dateEncodingStrategy = .millisecondsSince1970
             do {                
                 return .init(
@@ -47,7 +47,7 @@ extension Middleware where State == ToDoState, Action == TodoAction {
             }
             
         case .getAll:
-            let encoder = JSONEncoder()
+            let encoder = JSONEncoder() // TODO: Use environment
             encoder.dateEncodingStrategy = .millisecondsSince1970
             do {
                 return .init(
@@ -63,7 +63,7 @@ extension Middleware where State == ToDoState, Action == TodoAction {
             }
             
         case let .create(body):
-            let now = Date()
+            let now = Date() // TODO: Use environment
             let item = ToDoItem(
                 id: UUID().uuidString,
                 description: body.description,
@@ -73,7 +73,7 @@ extension Middleware where State == ToDoState, Action == TodoAction {
             )
             state.todos.append(item)
             
-            let encoder = JSONEncoder()
+            let encoder = JSONEncoder() // TODO: Use environment
             encoder.dateEncodingStrategy = .millisecondsSince1970
             do {
                 return .init(
@@ -88,11 +88,51 @@ extension Middleware where State == ToDoState, Action == TodoAction {
                     body: "Encoding todo item failure".data(using: .utf8)!)
             }
             
-        case .update:
-            return .init(statusCode: 200, headers: [:], body: "Updated".data(using: .utf8)!)
+        case let .update(id, body):
+            guard let index = state.todos.firstIndex(where: { $0.id == id }) else {
+                return .init(statusCode: 404, headers: [:], body: "Todo item not found".data(using: .utf8)!)
+            }
             
-        case .delete(id: let id):
-            return .init(statusCode: 205, headers: [:], body: "Deleted".data(using: .utf8)!)
+            let now = Date() // TODO: Use environment
+            let item = state.todos.remove(at: index)
+            let newItem = item.update(body: body, now: now)
+            state.todos.insert(newItem, at: index)
+            
+            let encoder = JSONEncoder() // TODO: Use environment
+            encoder.dateEncodingStrategy = .millisecondsSince1970
+            do {
+                return .init(
+                    statusCode: 200,
+                    headers: [:],
+                    body: try encoder.encode(newItem)
+                )
+            } catch {
+                return .init(
+                    statusCode: 500,
+                    headers: [:],
+                    body: "Encoding todo item failure".data(using: .utf8)!)
+            }
+            
+        case let .delete(id):
+            guard let index = state.todos.firstIndex(where: { $0.id == id }) else {
+                return .init(statusCode: 205, headers: [:], body: "Todo item not found".data(using: .utf8)!) // TODO: Change the body
+            }
+            
+            let item = state.todos.remove(at: index)
+            let encoder = JSONEncoder() // TODO: Use environment
+            encoder.dateEncodingStrategy = .millisecondsSince1970
+            do {
+                return .init(
+                    statusCode: 204,
+                    headers: [:],
+                    body: try encoder.encode(item)
+                )
+            } catch {
+                return .init(
+                    statusCode: 500,
+                    headers: [:],
+                    body: "Encoding todo item failure".data(using: .utf8)!)
+            }            
         }
     }
 }

@@ -1,6 +1,7 @@
 import Foundation
 import NIOHTTP1
 
+// TODO: Combine Router & Middleware ???
 struct Router<Action> {
     let route: (URLRequest) -> Action?
 }
@@ -60,7 +61,9 @@ extension Router where Action == TodoAction {
             }
             
         case .PUT:
-            guard let httpBody = request.httpBody else {
+            guard let indexOfTodos = pathComponents.firstIndex(of: "todos"),
+                  let indexOfId = pathComponents.index(indexOfTodos, offsetBy: 1, limitedBy: pathComponents.endIndex),
+                  let httpBody = request.httpBody else {
                 return nil
             }
             
@@ -68,7 +71,7 @@ extension Router where Action == TodoAction {
             decoder.dateDecodingStrategy = .millisecondsSince1970
             
             do {
-                return .update(body: try decoder.decode(UpdateTodoItemBody.self, from: httpBody))
+                return .update(id: pathComponents[indexOfId], body: try decoder.decode(UpdateTodoItemBody.self, from: httpBody))
             } catch {
                 return nil
             }

@@ -10,7 +10,7 @@ import NIOHTTP1
 
 func run() {
     let baseURL = URL(string: "http://127.0.0.1")!
-    let port = 5567
+    let port = 7788
     
     do {
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: numberOfThreads)

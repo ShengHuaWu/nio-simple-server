@@ -28,12 +28,22 @@ struct CreateTodoItemBody: Decodable {
 
 struct UpdateTodoItemBody: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case id
         case description
         case dueTo = "due_to"
     }
     
-    let id: String
-    let description: String
-    let dueTo: Date
+    let description: String?
+    let dueTo: Date?
+}
+
+extension ToDoItem {
+    func update(body: UpdateTodoItemBody, now: Date) -> Self {
+        ToDoItem(
+            id: id,
+            description: body.description ?? description,
+            dueTo: body.dueTo ?? dueTo,
+            createdAt: createdAt,
+            updatedAt: now
+        )
+    }
 }

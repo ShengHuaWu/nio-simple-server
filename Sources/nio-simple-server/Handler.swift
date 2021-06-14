@@ -44,7 +44,7 @@ final class Handler: ChannelInboundHandler {
                 return
             }
             
-            let response = Middleware.todos.run(&todoState, action) // TODO: `Middleware.todos` should be passed from outside
+            let response = Middleware.todos.run(&todoState, action, .live) // TODO: `Middleware.todos` should be passed from outside
             let head = HTTPResponseHead(
                 version: .init(major: 1, minor: 1),
                 status: .init(statusCode: response.statusCode),
@@ -124,4 +124,16 @@ private func makeRequest(with header: HTTPRequestHead) -> URLRequest? {
         
         return req
     }
+}
+
+private extension ToDoEnvironment {
+    static let live = Self.init(
+        jsonEncoder: {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .millisecondsSince1970
+            
+            return encoder
+        },
+        now: Date.init
+        )
 }

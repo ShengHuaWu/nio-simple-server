@@ -12,32 +12,34 @@ struct ToDoState {
     var todos: [ToDoItem] = []
 }
 
+struct ToDoEnvironment {
+    var jsonEncoder: () -> JSONEncoder
+    var now: () -> Date
+}
+
 struct Response {
     let statusCode: Int
     let headers: [String: String]
     let body: Data
 }
 
-struct Middleware<State, Action> {
-    let run: (inout State, Action) -> Response
+struct Middleware<State, Action, Environment> {
+    let run: (inout State, Action, Environment) -> Response
 }
 
-// TODO: Implement state
-extension Middleware where State == ToDoState, Action == TodoAction {
-    static let todos = Middleware { state, action in
+extension Middleware where State == ToDoState, Action == TodoAction, Environment == ToDoEnvironment {
+    static let todos = Middleware { state, action, environment in
         switch action {
         case let .get(id):
             guard let item = state.todos.first(where: { $0.id == id }) else {
                 return .init(statusCode: 404, headers: [:], body: "Todo item not found".data(using: .utf8)!)
             }
             
-            let encoder = JSONEncoder() // TODO: Use environment
-            encoder.dateEncodingStrategy = .millisecondsSince1970
             do {                
                 return .init(
                     statusCode: 200,
                     headers: [:],
-                    body: try encoder.encode(item)
+                    body: try environment.jsonEncoder().encode(item)
                 )
             } catch {
                 return .init(
@@ -47,13 +49,11 @@ extension Middleware where State == ToDoState, Action == TodoAction {
             }
             
         case .getAll:
-            let encoder = JSONEncoder() // TODO: Use environment
-            encoder.dateEncodingStrategy = .millisecondsSince1970
             do {
                 return .init(
                     statusCode: 200,
                     headers: [:],
-                    body: try encoder.encode(state.todos)
+                    body: try environment.jsonEncoder().encode(state.todos)
                 )
             } catch {
                 return .init(
@@ -63,7 +63,7 @@ extension Middleware where State == ToDoState, Action == TodoAction {
             }
             
         case let .create(body):
-            let now = Date() // TODO: Use environment
+            let now = environment.now()
             let item = ToDoItem(
                 id: UUID().uuidString,
                 description: body.description,
@@ -73,13 +73,11 @@ extension Middleware where State == ToDoState, Action == TodoAction {
             )
             state.todos.append(item)
             
-            let encoder = JSONEncoder() // TODO: Use environment
-            encoder.dateEncodingStrategy = .millisecondsSince1970
             do {
                 return .init(
                     statusCode: 201,
                     headers: [:],
-                    body: try encoder.encode(item)
+                    body: try environment.jsonEncoder().encode(item)
                 )
             } catch {
                 return .init(
@@ -93,18 +91,16 @@ extension Middleware where State == ToDoState, Action == TodoAction {
                 return .init(statusCode: 404, headers: [:], body: "Todo item not found".data(using: .utf8)!)
             }
             
-            let now = Date() // TODO: Use environment
+            let now = environment.now()
             let item = state.todos.remove(at: index)
             let newItem = item.update(body: body, now: now)
             state.todos.insert(newItem, at: index)
             
-            let encoder = JSONEncoder() // TODO: Use environment
-            encoder.dateEncodingStrategy = .millisecondsSince1970
             do {
                 return .init(
                     statusCode: 200,
                     headers: [:],
-                    body: try encoder.encode(newItem)
+                    body: try environment.jsonEncoder().encode(newItem)
                 )
             } catch {
                 return .init(
@@ -119,13 +115,11 @@ extension Middleware where State == ToDoState, Action == TodoAction {
             }
             
             let item = state.todos.remove(at: index)
-            let encoder = JSONEncoder() // TODO: Use environment
-            encoder.dateEncodingStrategy = .millisecondsSince1970
             do {
                 return .init(
                     statusCode: 204,
                     headers: [:],
-                    body: try encoder.encode(item)
+                    body: try environment.jsonEncoder().encode(item)
                 )
             } catch {
                 return .init(

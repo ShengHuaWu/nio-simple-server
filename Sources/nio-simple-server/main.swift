@@ -3,9 +3,9 @@ import NIO
 import NIOHTTP1
 
 #if DEBUG
-  let numberOfThreads = 1
+let numberOfThreads = 1
 #else
-  let numberOfThreads = System.coreCount
+let numberOfThreads = System.coreCount
 #endif
 
 func run() {
@@ -20,7 +20,14 @@ func run() {
             .serverChannelOption(reuseAddrOpt, value: 1)
             .childChannelInitializer { channel in
                 channel.pipeline.configureHTTPServerPipeline().flatMap {
-                    return channel.pipeline.addHandler(Handler(baseURL: baseURL, port: port))
+                    let handler = Handler(
+                        baseURL: baseURL,
+                        port: port,
+                        router: .todos,
+                        middleware: .todos
+                    )
+                    
+                    return channel.pipeline.addHandler(handler)
                 }
             }
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)

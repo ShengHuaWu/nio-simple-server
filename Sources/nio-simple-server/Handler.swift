@@ -9,11 +9,20 @@ final class Handler: ChannelInboundHandler {
     
     private let baseURL: URL
     private let port: Int
+    private let router: Router<TodoAction>
+    private let middleware: Middleware<ToDoState, TodoAction, ToDoEnvironment>
     private var request: URLRequest?
     
-    init(baseURL: URL, port: Int) {
+    init(
+        baseURL: URL,
+        port: Int,
+        router: Router<TodoAction>,
+        middleware: Middleware<ToDoState, TodoAction, ToDoEnvironment>
+    ) {
         self.baseURL = baseURL
         self.port = port
+        self.router = router
+        self.middleware = middleware
     }
     
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
@@ -30,8 +39,7 @@ final class Handler: ChannelInboundHandler {
             
         case .end:
             guard let request = self.request,
-                  // TODO: `Router.todos` should be passed from outside
-                  let action = Router.todos.route(request) else {
+                  let action = self.router.route(request) else {
                 let head = HTTPResponseHead(
                     version: .init(major: 1, minor: 1),
                     status: .init(statusCode: 200), // TODO: Should return proper status code or even an error
@@ -44,7 +52,7 @@ final class Handler: ChannelInboundHandler {
                 return
             }
             
-            let response = Middleware.todos.run(&todoState, action, .live) // TODO: `Middleware.todos` should be passed from outside
+            let response = self.middleware.run(&todoState, action, .live)
             let head = HTTPResponseHead(
                 version: .init(major: 1, minor: 1),
                 status: .init(statusCode: response.statusCode),

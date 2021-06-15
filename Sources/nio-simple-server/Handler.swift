@@ -42,7 +42,7 @@ final class Handler: ChannelInboundHandler {
                   let action = self.router.route(request) else {
                 let head = HTTPResponseHead(
                     version: .init(major: 1, minor: 1),
-                    status: .init(statusCode: 200), // TODO: Should return proper status code or even an error
+                    status: .init(statusCode: 500),
                     headers: .init([("location", "\(baseURL.absoluteString):\(port)")])
                 )
                 context.channel.write(HTTPServerResponsePart.head(head), promise: nil)

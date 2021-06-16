@@ -17,52 +17,26 @@ struct ToDoEnvironment {
     var now: () -> Date
 }
 
-enum ToDoError: Error {
-    case itemNotFound
-    case encodingFailure
-}
-
-// TODO: Handle response headers properly
+/*
+ TODO: Handle response in a unified structure, e.g.
+ {
+     "data": { ... }
+ }
+ */
 extension Middleware where State == ToDoState, Action == TodoAction, Environment == ToDoEnvironment {
+    private struct TodoNotFound: Error {}
+    
     static let todos = Middleware { state, action, environment in
         switch action {
         case let .get(id):
             guard let item = state.todos.first(where: { $0.id == id }) else {
-                return .init(
-                    statusCode: 404,
-                    headers: [:],
-                    body: try! environment.jsonEncoder().encode(APIError(error: ToDoError.itemNotFound)) // TODO: Consider throwing from middleware
-                )
+                return .init(statusCode: 404, apiError: .init(error: TodoNotFound()))
             }
             
-            do {
-                return .init(
-                    statusCode: 200,
-                    headers: [:],
-                    body: try environment.jsonEncoder().encode(item)
-                )
-            } catch {
-                return .init(
-                    statusCode: 500,
-                    headers: [:],
-                    body: try! environment.jsonEncoder().encode(APIError(error: ToDoError.encodingFailure)) // TODO: Consider throwing from middleware
-                )
-            }
+            return .init(statusCode: 200, encodable: item)
             
         case .getAll:
-            do {
-                return .init(
-                    statusCode: 200,
-                    headers: [:],
-                    body: try environment.jsonEncoder().encode(state.todos)
-                )
-            } catch {
-                return .init(
-                    statusCode: 500,
-                    headers: [:],
-                    body: try! environment.jsonEncoder().encode(APIError(error: ToDoError.encodingFailure)) // TODO: Consider throwing from middleware
-                )
-            }
+            return .init(statusCode: 200, encodable: state.todos)
             
         case let .create(body):
             let now = environment.now()
@@ -75,27 +49,11 @@ extension Middleware where State == ToDoState, Action == TodoAction, Environment
             )
             state.todos.append(item)
             
-            do {
-                return .init(
-                    statusCode: 201,
-                    headers: [:],
-                    body: try environment.jsonEncoder().encode(item)
-                )
-            } catch {
-                return .init(
-                    statusCode: 500,
-                    headers: [:],
-                    body: try! environment.jsonEncoder().encode(APIError(error: ToDoError.encodingFailure)) // TODO: Consider throwing from middleware
-                )
-            }
+            return .init(statusCode: 201, encodable: item)
             
         case let .update(id, body):
             guard let index = state.todos.firstIndex(where: { $0.id == id }) else {
-                return .init(
-                    statusCode: 404,
-                    headers: [:],
-                    body: try! environment.jsonEncoder().encode(APIError(error: ToDoError.itemNotFound)) // TODO: Consider throwing from middleware
-                )
+                return .init(statusCode: 404, apiError: .init(error: TodoNotFound()))
             }
             
             let now = environment.now()
@@ -103,43 +61,16 @@ extension Middleware where State == ToDoState, Action == TodoAction, Environment
             let newItem = item.update(body: body, now: now)
             state.todos.insert(newItem, at: index)
             
-            do {
-                return .init(
-                    statusCode: 200,
-                    headers: [:],
-                    body: try environment.jsonEncoder().encode(newItem)
-                )
-            } catch {
-                return .init(
-                    statusCode: 500,
-                    headers: [:],
-                    body: try! environment.jsonEncoder().encode(APIError(error: ToDoError.encodingFailure)) // TODO: Consider throwing from middleware
-                )
-            }
+            return .init(statusCode: 200, encodable: newItem)
             
         case let .delete(id):
             guard let index = state.todos.firstIndex(where: { $0.id == id }) else {
-                return .init(
-                    statusCode: 205,
-                    headers: [:],
-                    body: "The item is not found".data(using: .utf8)! // TODO: Should return a JSON structure
-                )
+                return .init(statusCode: 404, apiError: .init(error: TodoNotFound()))
             }
             
             let item = state.todos.remove(at: index)
-            do {
-                return .init(
-                    statusCode: 204,
-                    headers: [:],
-                    body: try environment.jsonEncoder().encode(item)
-                )
-            } catch {
-                return .init(
-                    statusCode: 500,
-                    headers: [:],
-                    body: try! environment.jsonEncoder().encode(APIError(error: ToDoError.encodingFailure)) // TODO: Consider throwing from middleware
-                )
-            }
+            
+            return .init(statusCode: 204, encodable: item)
         }
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-enum TodoAction {
+public enum TodoAction {
     case get(id: String)
     case getAll
     case create(body: CreateTodoItemBody)
@@ -8,11 +8,11 @@ enum TodoAction {
     case delete(id: String)
 }
 
-struct ToDoState {
+public struct ToDoState {
     var todos: [ToDoItem] = []
 }
 
-struct ToDoEnvironment {
+public struct ToDoEnvironment {
     var jsonEncoder: () -> JSONEncoder
     var now: () -> Date
 }
@@ -26,7 +26,7 @@ struct ToDoEnvironment {
 extension Middleware where State == ToDoState, Action == TodoAction, Environment == ToDoEnvironment {
     private struct TodoNotFound: Error {}
     
-    static let todos = Middleware { state, action, environment in
+    public static let todos = Middleware { state, action, environment in
         switch action {
         case let .get(id):
             guard let item = state.todos.first(where: { $0.id == id }) else {

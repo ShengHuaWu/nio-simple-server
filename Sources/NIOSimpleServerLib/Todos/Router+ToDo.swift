@@ -2,7 +2,7 @@ import Foundation
 import NIOHTTP1
 
 extension Router where Action == TodoAction {
-    static let todos = Router { request in
+    public static let todos = Router { request in
         guard let url = request.url, let components = URLComponents(string: url.absoluteString) else {
             return nil
         }

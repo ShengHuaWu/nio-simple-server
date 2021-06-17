@@ -1,7 +1,7 @@
 import Foundation
 
 // TODO: Combine Router & Middleware ???
-struct Router<Action> {
+public struct Router<Action> {
     let route: (URLRequest) -> Action?
 }
 

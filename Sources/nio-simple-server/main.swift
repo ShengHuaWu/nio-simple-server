@@ -1,6 +1,7 @@
 import Foundation
 import NIO
 import NIOHTTP1
+import NIOSimpleServerLib
 
 #if DEBUG
 let numberOfThreads = 1

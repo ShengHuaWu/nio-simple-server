@@ -16,7 +16,7 @@ struct ToDoItem: Hashable, Codable {
     let updatedAt: Date
 }
 
-struct CreateTodoItemBody: Decodable {
+public struct CreateTodoItemBody: Decodable {
     private enum CodingKeys: String, CodingKey {
         case description
         case dueTo = "due_to"
@@ -26,7 +26,7 @@ struct CreateTodoItemBody: Decodable {
     let dueTo: Date
 }
 
-struct UpdateTodoItemBody: Decodable {
+public struct UpdateTodoItemBody: Decodable {
     private enum CodingKeys: String, CodingKey {
         case description
         case dueTo = "due_to"

@@ -4,8 +4,8 @@ import NIOHTTP1
 
 private var todoState = ToDoState() // TODO: This should be stored into DB
 
-final class Handler: ChannelInboundHandler {
-    typealias InboundIn = HTTPServerRequestPart
+public final class Handler: ChannelInboundHandler {
+    public typealias InboundIn = HTTPServerRequestPart
     
     private let baseURL: URL
     private let port: Int
@@ -13,7 +13,7 @@ final class Handler: ChannelInboundHandler {
     private let middleware: Middleware<ToDoState, TodoAction, ToDoEnvironment>
     private var request: URLRequest?
     
-    init(
+    public init(
         baseURL: URL,
         port: Int,
         router: Router<TodoAction>,
@@ -25,7 +25,7 @@ final class Handler: ChannelInboundHandler {
         self.middleware = middleware
     }
     
-    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         let reqPart = self.unwrapInboundIn(data)
         
         switch reqPart {
@@ -70,11 +70,11 @@ final class Handler: ChannelInboundHandler {
         }
     }
     
-    func channelReadComplete(context: ChannelHandlerContext) {
+    public func channelReadComplete(context: ChannelHandlerContext) {
         context.flush()
     }
     
-    func errorCaught(context: ChannelHandlerContext, error: Error) {
+    public func errorCaught(context: ChannelHandlerContext, error: Error) {
         context.close(promise: nil)
     }
 }

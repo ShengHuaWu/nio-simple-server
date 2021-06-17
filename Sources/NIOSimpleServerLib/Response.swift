@@ -21,11 +21,11 @@ extension Response {
         }
     }
     
-    init<T: Encodable>(statusCode: Int, encodable: T) {
+    init<T: Encodable>(statusCode: Int, encoder: JSONEncoder, encodable: T) {
         self.headers = [:]
         
         do {
-            self.body = try JSONEncoder().encode(encodable)
+            self.body = try encoder.encode(encodable)
             self.statusCode = statusCode
         } catch {
             assertionFailure("Encoding body fails while creating response, the body is \n \(encodable) ")

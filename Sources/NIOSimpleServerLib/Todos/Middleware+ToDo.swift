@@ -33,10 +33,10 @@ extension Middleware where State == ToDoState, Action == TodoAction, Environment
                 return .init(statusCode: 404, apiError: .init(error: TodoNotFound()))
             }
             
-            return .init(statusCode: 200, encodable: item)
+            return .init(statusCode: 200, encoder: environment.jsonEncoder(), encodable: item)
             
         case .getAll:
-            return .init(statusCode: 200, encodable: state.todos)
+            return .init(statusCode: 200, encoder: environment.jsonEncoder(), encodable: state.todos)
             
         case let .create(body):
             let now = environment.now()
@@ -49,7 +49,7 @@ extension Middleware where State == ToDoState, Action == TodoAction, Environment
             )
             state.todos.append(item)
             
-            return .init(statusCode: 201, encodable: item)
+            return .init(statusCode: 201, encoder: environment.jsonEncoder(), encodable: item)
             
         case let .update(id, body):
             guard let index = state.todos.firstIndex(where: { $0.id == id }) else {
@@ -61,7 +61,7 @@ extension Middleware where State == ToDoState, Action == TodoAction, Environment
             let newItem = item.update(body: body, now: now)
             state.todos.insert(newItem, at: index)
             
-            return .init(statusCode: 200, encodable: newItem)
+            return .init(statusCode: 200, encoder: environment.jsonEncoder(), encodable: newItem)
             
         case let .delete(id):
             guard let index = state.todos.firstIndex(where: { $0.id == id }) else {
@@ -70,7 +70,7 @@ extension Middleware where State == ToDoState, Action == TodoAction, Environment
             
             let item = state.todos.remove(at: index)
             
-            return .init(statusCode: 204, encodable: item)
+            return .init(statusCode: 204, encoder: environment.jsonEncoder(), encodable: item)
         }
     }
 }

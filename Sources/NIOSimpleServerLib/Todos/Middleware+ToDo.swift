@@ -14,6 +14,7 @@ public struct ToDoState {
 
 public struct ToDoEnvironment {
     var jsonEncoder: () -> JSONEncoder
+    var uuid: () -> UUID
     var now: () -> Date
 }
 
@@ -39,7 +40,7 @@ extension Middleware where State == ToDoState, Action == TodoAction, Environment
         case let .create(body):
             let now = environment.now()
             let item = ToDoItem(
-                id: UUID().uuidString,
+                id: environment.uuid().uuidString,
                 description: body.description,
                 dueTo: body.dueTo,
                 createdAt: now,

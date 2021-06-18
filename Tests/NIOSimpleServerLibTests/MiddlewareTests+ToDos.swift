@@ -13,13 +13,16 @@ final class MiddlewareToDosTests: XCTestCase {
         environment = .unimplemented
     }
     
-    func testCreateToDoSucceeds() {
+    func testCreationSucceeds() {
         environment.jsonEncoder = {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .millisecondsSince1970
             
             return encoder
         }
+        
+        let id = UUID(uuidString: "E621E1F8-C36C-495A-93FC-0C247A3E6E5F")!
+        environment.uuid = { id }
         
         environment.now = {
             Date(timeIntervalSince1970: 645606000)
@@ -36,13 +39,14 @@ final class MiddlewareToDosTests: XCTestCase {
         let item = state.todos[0]
         
         XCTAssertEqual(response.body, try? environment.jsonEncoder().encode(item))
+        XCTAssertEqual(item.id, id.uuidString)
         XCTAssertEqual(item.description, body.description)
         XCTAssertEqual(item.dueTo, body.dueTo)
         XCTAssertEqual(item.createdAt, environment.now())
         XCTAssertEqual(item.updatedAt, environment.now())
     }
     
-    func testGetToDoByIdSucceeds() {
+    func testGetOneByIdSucceeds() {
         environment.jsonEncoder = {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .millisecondsSince1970
@@ -67,7 +71,7 @@ final class MiddlewareToDosTests: XCTestCase {
     }
     
     
-    func testGetToDoByIdFailsWhenItemNotFound() throws {
+    func testGetOneByIdFailsWhenItemNotFound() throws {
         let response = Middleware.todos.run(&state, .get(id: "Blob"), environment)
         
         XCTAssertEqual(response.statusCode, 404)
@@ -86,6 +90,10 @@ private extension ToDoEnvironment {
         jsonEncoder: {
             XCTFail("JSON encoder is unimplemented yet.")
             return JSONEncoder()
+        },
+        uuid: {
+            XCTFail("UUID is unimplemented yet.")
+            return UUID()
         },
         now: {
             XCTFail("Now is unimplemented yet.")

@@ -142,6 +142,7 @@ private extension ToDoEnvironment {
             
             return encoder
         },
+        uuid: UUID.init,
         now: Date.init
         )
 }

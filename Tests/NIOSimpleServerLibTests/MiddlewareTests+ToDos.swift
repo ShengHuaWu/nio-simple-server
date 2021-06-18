@@ -4,15 +4,16 @@ import XCTest
 
 final class MiddlewareToDosTests: XCTestCase {
     private var state: ToDoState!
+    private var environment: ToDoEnvironment!
     
     override func setUp() {
         super.setUp()
         
         state = .init()
+        environment = .unimplemented
     }
     
     func testCreateToDoSucceeds() {
-        var environment = ToDoEnvironment.unimplemented
         environment.jsonEncoder = {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .millisecondsSince1970
@@ -29,7 +30,7 @@ final class MiddlewareToDosTests: XCTestCase {
         let response = Middleware.todos.run(&state, .create(body: body), environment)
         
         XCTAssertEqual(response.statusCode, 201)
-        XCTAssertEqual(response.headers, [:])
+        XCTAssertTrue(response.headers.isEmpty)
         XCTAssertEqual(state.todos.count, 1)
         
         let item = state.todos[0]
@@ -39,6 +40,43 @@ final class MiddlewareToDosTests: XCTestCase {
         XCTAssertEqual(item.dueTo, body.dueTo)
         XCTAssertEqual(item.createdAt, environment.now())
         XCTAssertEqual(item.updatedAt, environment.now())
+    }
+    
+    func testGetToDoByIdSucceeds() {
+        environment.jsonEncoder = {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .millisecondsSince1970
+            
+            return encoder
+        }
+        
+        let item = ToDoItem(
+            id: "XYZ",
+            description: "This is a placeholder",
+            dueTo: Date(),
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        state.todos = [item]
+        
+        let response = Middleware.todos.run(&state, .get(id: item.id), environment)
+        
+        XCTAssertEqual(response.statusCode, 200)
+        XCTAssertTrue(response.headers.isEmpty)
+        XCTAssertEqual(response.body, try? environment.jsonEncoder().encode(item))
+    }
+    
+    
+    func testGetToDoByIdFailsWhenItemNotFound() throws {
+        let response = Middleware.todos.run(&state, .get(id: "Blob"), environment)
+        
+        XCTAssertEqual(response.statusCode, 404)
+        XCTAssertTrue(response.headers.isEmpty)
+        
+        let apiError = try JSONDecoder().decode(APIError.self, from: response.body)
+        // TODO: Assert `response.body` with the private error
+        XCTAssertFalse(apiError.message.isEmpty)
+        XCTAssertFalse(apiError.errorDump.isEmpty)
     }
 }
 

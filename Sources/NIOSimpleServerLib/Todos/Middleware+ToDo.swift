@@ -24,8 +24,6 @@ public struct ToDoEnvironment {
  }
  */
 extension Middleware where State == ToDoState, Action == TodoAction, Environment == ToDoEnvironment {
-    private struct TodoNotFound: Error {}
-    
     public static let todos = Middleware { state, action, environment in
         switch action {
         case let .get(id):
@@ -74,3 +72,6 @@ extension Middleware where State == ToDoState, Action == TodoAction, Environment
         }
     }
 }
+
+// MARK: - Private
+private struct TodoNotFound: Error {}

@@ -1,6 +1,6 @@
 import Foundation
 
-struct APIError: Encodable, Error {
+struct APIError: Codable, Error {
     let errorDump: String
     let message: String
     

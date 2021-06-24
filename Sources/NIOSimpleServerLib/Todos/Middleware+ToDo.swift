@@ -1,18 +1,16 @@
 import Foundation
 
-public enum TodoAction {
+struct ToDoState {
+    var todos: [ToDoItem] = []
+}
+public enum ToDoAction {
     case get(id: String)
     case getAll
     case create(body: CreateTodoItemBody)
     case update(id: String, body: UpdateTodoItemBody)
     case delete(id: String)
 }
-
-public struct ToDoState {
-    var todos: [ToDoItem] = []
-}
-
-public struct ToDoEnvironment {
+struct ToDoEnvironment {
     var jsonEncoder: () -> JSONEncoder
     var uuid: () -> UUID
     var now: () -> Date
@@ -24,8 +22,8 @@ public struct ToDoEnvironment {
      "data": { ... }
  }
  */
-extension Middleware where State == ToDoState, Action == TodoAction, Environment == ToDoEnvironment {
-    public static let todos = Middleware { state, action, environment in
+extension Middleware where State == ToDoState, Action == ToDoAction, Environment == ToDoEnvironment {
+    static let todos = Middleware { state, action, environment in
         switch action {
         case let .get(id):
             guard let item = state.todos.first(where: { $0.id == id }) else {

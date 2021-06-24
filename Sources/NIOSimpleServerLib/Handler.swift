@@ -2,22 +2,22 @@ import Foundation
 import NIO
 import NIOHTTP1
 
-private var todoState = ToDoState() // TODO: This should be stored into DB
+private var appState = AppState(todo: .init()) // TODO: This should be stored into DB
 
 public final class Handler: ChannelInboundHandler {
     public typealias InboundIn = HTTPServerRequestPart
     
     private let baseURL: URL
     private let port: Int
-    private let router: Router<TodoAction>
-    private let middleware: Middleware<ToDoState, TodoAction, ToDoEnvironment>
+    private let router: Router<AppAction>
+    private let middleware: Middleware<AppState, AppAction, AppEnvironment>
     private var request: URLRequest?
     
     public init(
         baseURL: URL,
         port: Int,
-        router: Router<TodoAction>,
-        middleware: Middleware<ToDoState, TodoAction, ToDoEnvironment>
+        router: Router<AppAction>,
+        middleware: Middleware<AppState, AppAction, AppEnvironment>
     ) {
         self.baseURL = baseURL
         self.port = port
@@ -52,7 +52,7 @@ public final class Handler: ChannelInboundHandler {
                 return
             }
             
-            let response = self.middleware.run(&todoState, action, .live)
+            let response = self.middleware.run(&appState, action, .live)
             let head = HTTPResponseHead(
                 version: .init(major: 1, minor: 1),
                 status: .init(statusCode: response.statusCode),
@@ -132,17 +132,4 @@ private func makeRequest(with header: HTTPRequestHead) -> URLRequest? {
         
         return req
     }
-}
-
-private extension ToDoEnvironment {
-    static let live = Self.init(
-        jsonEncoder: {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .millisecondsSince1970
-            
-            return encoder
-        },
-        uuid: UUID.init,
-        now: Date.init
-        )
 }

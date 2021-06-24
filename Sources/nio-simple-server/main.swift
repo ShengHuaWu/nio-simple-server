@@ -24,8 +24,8 @@ func run() {
                     let handler = Handler(
                         baseURL: baseURL,
                         port: port,
-                        router: .todos,
-                        middleware: .todos
+                        router: appRouter,
+                        middleware: appMiddleware
                     )
                     
                     return channel.pipeline.addHandler(handler)

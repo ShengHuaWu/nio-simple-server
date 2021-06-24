@@ -21,4 +21,10 @@ extension Router {
     func combine(_ routers: Router...) -> Router {
         combine(routers)
     }
+    
+    func map<NewAction>(_ f: @escaping (Action) -> NewAction) -> Router<NewAction> {
+        .init { self.route($0).map(f) }
+    }
 }
+
+public let appRouter: Router<AppAction> = Router.todos.map(AppAction.todo)
